@@ -1,0 +1,1 @@
+alter retention policy "autogen" on "auo" duration 7d shard duration 1d replication 1 default

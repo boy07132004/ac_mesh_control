@@ -1,0 +1,43 @@
+version: "3.4"
+
+x-env-variables: &common-variables
+    INFLUXDB_DB: auo
+    INFLUXDB_ADMIN_USER: admin
+    INFLUXDB_ADMIN_PASSWORD: admin
+    INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    PROJECT: ac_ctl
+    TZ: Asia/Taipei
+    
+services: 
+    database: 
+        restart: always
+        image: influxdb:1.8.10
+        volumes:
+            - "$PWD/init_db.iql:/docker-entrypoint-initdb.d/init_influxdb.iql:ro"
+            # - "db_data:/var/lib/influxdb"
+        networks:
+            internal:
+        ports:
+            - "8086:8086"
+            - "8083:8083"
+        environment: *common-variables
+    
+    grafana:
+        image: grafana/grafana-oss:8.5.5
+        restart: always
+        networks:
+            internal:
+        ports:
+            - 3000:3000
+          
+        
+volumes:
+    db_data:
+    
+
+networks:
+    internal:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.28.0.0/16

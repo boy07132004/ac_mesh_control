@@ -1,0 +1,10 @@
+**/build
+**/.build
+
+sdkconfig
+sdkconfig.old
+
+.vscode
+*.log
+
+**/__pycache__
