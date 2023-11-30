@@ -51,9 +51,16 @@ mdf_err_t report_to_root(int rssi, int layer)
     mwifi_data_type_t data_type = {0};
     data_type.compression = true;
 
-    size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\",\"value\":[%d,%d,%d,%d,%d,%d],\"rssi\":%d, \"layer\":%d}", LOCAL_NAME,
-                    control_ac_with_cmd(0), control_ac_with_cmd(1), control_ac_with_cmd(2),
-                    control_ac_with_cmd(3), control_ac_with_cmd(4), control_ac_with_cmd(5),
+    int on_off = control_ac_with_cmd(0);
+    int work_mode = control_ac_with_cmd(3);
+    int locked = control_ac_with_cmd(6);
+    int curr_temp = control_ac_with_cmd(9);
+    int set_temp = control_ac_with_cmd(10);
+    int wind_speed = control_ac_with_cmd(15);
+    int valve = control_ac_with_cmd(19);
+
+    size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\",\"value\":[%d,%d,%d,%d,%d,%d,%d],\"rssi\":%d, \"layer\":%d}", LOCAL_NAME,
+                    on_off, work_mode, locked, curr_temp, set_temp, wind_speed, valve,
                     rssi, layer);
 
     ret = mwifi_write(NULL, &data_type, msg, size, true);
@@ -104,57 +111,75 @@ mdf_err_t msg_parse(const char *msg)
     json_group = cJSON_GetObjectItem(json_root, "group");
     json_manual_cmd = cJSON_GetObjectItem(json_root, "manual");
 
-    if (json_manual_cmd)
+    if (json_addr) // To specific device
     {
-        parse_manual_cmd(json_manual_cmd->valuestring);
-    }
-    else if (json_cmd)
-    {
-        if (json_addr) // To specific device
+        if (strcmp(json_addr->valuestring, LOCAL_NAME) == 0)
         {
-            if (strcmp(json_addr->valuestring, LOCAL_NAME) == 0)
+            if (json_manual_cmd)
+            {
+            }
+            else if (json_cmd)
             {
                 cmd_ret = control_ac_with_cmd(json_cmd->valueint);
 
                 if (cmd_ret >= 0)
                     return_value_to_root(json_cmd->valueint, cmd_ret);
                 else if (cmd_ret < -1)
+                {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
+                    goto msg_parse_error;
+                }
             }
             else
             {
-                zm_broadcast(msg);
+                ESP_LOGE(TAG, "Command not found.");
+                goto msg_parse_error;
             }
         }
-        else if (json_group) // To group or all devices
+        else
         {
-            if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0 || strcmp(json_group->valuestring, "all") == 0)
+            zm_broadcast(msg);
+        }
+    }
+    else if (json_group) // To group or all devices
+    {
+        if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0 || strcmp(json_group->valuestring, "all") == 0)
+        {
+            if (json_manual_cmd)
+            {
+            }
+            else if (json_cmd)
             {
                 cmd_ret = control_ac_with_cmd(json_cmd->valueint);
                 if (cmd_ret >= 0)
                     return_value_to_root(json_cmd->valueint, cmd_ret);
                 else if (cmd_ret < -1)
+                {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
+                    goto msg_parse_error;
+                }
             }
+            else
+            {
+                ESP_LOGE(TAG, "Command not found.");
+                goto msg_parse_error;
+            }
+        }
 
-            zm_broadcast(msg);
-        }
-        else // Address not found
-        {
-            cJSON_Delete(json_root);
-            ESP_LOGE(TAG, "cJSON_Parse, address not found, data: %s", msg);
-            return MDF_FAIL;
-        }
+        zm_broadcast(msg);
     }
-    else // Command not found
+    else // Address not found
     {
-        cJSON_Delete(json_root);
-        ESP_LOGE(TAG, "cJSON_Parse, command not found, data: %s", msg);
-        return MDF_FAIL;
+        ESP_LOGE(TAG, "cJSON_Parse, address not found, data: %s", msg);
+        goto msg_parse_error;
     }
 
     cJSON_Delete(json_root);
     return MDF_OK;
+
+msg_parse_error:
+    cJSON_Delete(json_root);
+    return MDF_FAIL;
 }
 
 void parse_manual_cmd(const char *msg)

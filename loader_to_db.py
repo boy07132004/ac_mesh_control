@@ -28,7 +28,7 @@ class DataQueueToDB(threading.Thread):
                             format='%(name)s - %(levelname)s - %(message)s')
         self.dataQueue = queue.Queue(maxsize=0)
         self.command_map = ["on_off", "work_mode",
-                            "locked", "curr_temp", "set_temp", "wind_speed"]
+                            "locked", "curr_temp", "set_temp", "wind_speed", "valve"]
 
     def put_report_data(self, data):
         # {"device":"508A", "value":[0,1,2,3,4,5], "rssi":-10, "layer":1}
@@ -48,6 +48,7 @@ class DataQueueToDB(threading.Thread):
         p.field(self.command_map[4], value_array[4]/10.0)
         p.field(self.command_map[5], ["High", "Mid", "Low", "AutoHigh",
                                       "AutoMid", "AutoLow", "AutoStop"][value_array[5]-1])
+        p.field(self.command_map[6], ["Off", "On"][value_array[6]])
 
         rssi = data.get("rssi")
         if type(rssi) is int:

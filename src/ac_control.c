@@ -4,7 +4,7 @@ static const char *TAG = "ac_control";
 
 int control_ac_with_cmd(int cmd_idx)
 {
-    if (cmd_idx < 0 || cmd_idx > CMD_LENGTH)
+    if (cmd_idx < 0 || cmd_idx >= sizeof(CMD_SET) / (8 * sizeof(uint8_t)))
     {
         ESP_LOGE(TAG, "CMD IDX ERROR, IDX : %d", cmd_idx);
         return CMD_IDX_ERROR;

@@ -51,7 +51,7 @@ class SerialCommunication:
             while 1:
                 idx = input('輸入指令index：')
 
-                if idx.isdigit() is False or not (0 <= int(idx) <= 18):
+                if idx.isdigit() is False or not (0 <= int(idx) <= 19):
                     print("index not found")
                     continue
 
