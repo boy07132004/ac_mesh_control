@@ -51,6 +51,17 @@ class SerialCommunication:
             while 1:
                 idx = input('輸入指令index：')
 
+                if len(idx) == 0:
+                    try:
+                        temp = []
+                        for i in range(8):
+                            temp.append(int(input("0x"), 16))
+
+                        message["manual"] = temp
+                        break
+                    except:
+                        print("manual failed")
+
                 if idx.isdigit() is False or not (0 <= int(idx) <= 19):
                     print("index not found")
                     continue

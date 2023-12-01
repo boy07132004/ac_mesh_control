@@ -92,6 +92,7 @@ mdf_err_t return_value_to_root(int origin_cmd, int value)
 
 mdf_err_t msg_parse(const char *msg)
 {
+    mdf_err_t res = MDF_OK;
     int cmd_ret = -1;
     cJSON *json_root = NULL;
     cJSON *json_addr = NULL;
@@ -117,6 +118,11 @@ mdf_err_t msg_parse(const char *msg)
         {
             if (json_manual_cmd)
             {
+                if ((res = parse_manual_cmd(json_manual_cmd)) == MDF_FAIL)
+                {
+                    ESP_LOGE(TAG, "MANUAL CMD ERROR.");
+                };
+                goto end;
             }
             else if (json_cmd)
             {
@@ -127,13 +133,15 @@ mdf_err_t msg_parse(const char *msg)
                 else if (cmd_ret < -1)
                 {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
-                    goto msg_parse_error;
+                    res = MDF_FAIL;
+                    goto end;
                 }
             }
             else
             {
                 ESP_LOGE(TAG, "Command not found.");
-                goto msg_parse_error;
+                res = MDF_FAIL;
+                goto end;
             }
         }
         else
@@ -147,22 +155,30 @@ mdf_err_t msg_parse(const char *msg)
         {
             if (json_manual_cmd)
             {
+                if ((res = parse_manual_cmd(json_manual_cmd)) == MDF_FAIL)
+                {
+                    ESP_LOGE(TAG, "MANUAL CMD ERROR.");
+                };
+                goto end;
             }
             else if (json_cmd)
             {
                 cmd_ret = control_ac_with_cmd(json_cmd->valueint);
+
                 if (cmd_ret >= 0)
                     return_value_to_root(json_cmd->valueint, cmd_ret);
                 else if (cmd_ret < -1)
                 {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
-                    goto msg_parse_error;
+                    res = MDF_FAIL;
+                    goto end;
                 }
             }
             else
             {
                 ESP_LOGE(TAG, "Command not found.");
-                goto msg_parse_error;
+                res = MDF_FAIL;
+                goto end;
             }
         }
 
@@ -171,18 +187,46 @@ mdf_err_t msg_parse(const char *msg)
     else // Address not found
     {
         ESP_LOGE(TAG, "cJSON_Parse, address not found, data: %s", msg);
-        goto msg_parse_error;
+        res = MDF_FAIL;
+        goto end;
     }
 
+end:
     cJSON_Delete(json_root);
-    return MDF_OK;
-
-msg_parse_error:
-    cJSON_Delete(json_root);
-    return MDF_FAIL;
+    return res;
 }
 
-void parse_manual_cmd(const char *msg)
+mdf_err_t parse_manual_cmd(const cJSON *manuel_cmd)
 {
-    printf("%s\n", msg);
+    mdf_err_t res = MDF_OK;
+    uint8_t cmd[8];
+    cJSON *elem = NULL;
+
+    if (!cJSON_IsArray(manuel_cmd))
+    {
+        ESP_LOGE(TAG, "cmd isn't an array.");
+        res = MDF_FAIL;
+        goto end;
+    }
+    if (cJSON_GetArraySize(manuel_cmd) != 8)
+    {
+        ESP_LOGE(TAG, "cmd size error.");
+        res = MDF_FAIL;
+        goto end;
+    }
+    for (int i = 0; i < 8; i++)
+    {
+        elem = cJSON_GetArrayItem(manuel_cmd, i);
+        if (!cJSON_IsNumber(elem))
+        {
+            ESP_LOGE(TAG, "cmd element data type error.");
+            res = MDF_FAIL;
+            goto end;
+        }
+        cmd[i] = elem->valueint;
+    }
+    control_ac_with_rs485(cmd);
+
+end:
+    return res;
 }

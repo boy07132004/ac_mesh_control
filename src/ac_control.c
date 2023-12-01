@@ -13,7 +13,7 @@ int control_ac_with_cmd(int cmd_idx)
     return control_ac_with_rs485(CMD_SET[cmd_idx]);
 }
 
-int control_ac_with_rs485(uint8_t *cmd)
+int control_ac_with_rs485(const uint8_t *cmd)
 {
     uint8_t data[BUF_SIZE_485];
     uint8_t len;

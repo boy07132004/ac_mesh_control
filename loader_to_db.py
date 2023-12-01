@@ -86,6 +86,8 @@ class DataQueueToDB(threading.Thread):
             elif cmd == 5:
                 value = ["High", "Mid", "Low", "AutoHigh",
                          "AutoMid", "AutoLow", "AutoStop"][value-1]
+            elif cmd == 6:
+                value = ["Off", "On"][value]
 
         except:
             logging.error(f"Command parse. > {data}")

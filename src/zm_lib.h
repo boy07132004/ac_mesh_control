@@ -14,7 +14,7 @@
 mdf_err_t zm_broadcast(const char *msg);
 mdf_err_t return_value_to_root(int origin_cmd, int value);
 mdf_err_t report_to_root(int rssi, int layer);
-void parse_manual_cmd(const char *msg);
+mdf_err_t parse_manual_cmd(const cJSON *manuel_cmd);
 mdf_err_t uart_init(int uart_num, int rx, int tx, int baud);
 mdf_err_t msg_parse(const char *msg);
 
