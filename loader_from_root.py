@@ -77,7 +77,7 @@ class SerialCommunication:
 if __name__ == "__main__":
     port_name = "/dev/ttyUSB0"
     baud_rate = 115200
-
+    print("1- 開機 2- 關機 11- 寫入設定溫度20度 12- 寫入設定溫度26度")
     serial_communication = SerialCommunication(port_name, baud_rate)
     data_to_db = loader_to_db.DataQueueToDB()
 
