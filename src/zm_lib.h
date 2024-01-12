@@ -6,7 +6,7 @@
 #include "ac_control.h"
 
 #define MAX_MESSAGE_SIZE 500
-#define CMD_MAX_SIZE 20
+// #define CMD_MAX_SIZE 20
 
 #define LOCAL_GROUP CONFIG_LOCAL_GROUP
 #define LOCAL_NAME CONFIG_LOCAL_NAME
