@@ -37,7 +37,7 @@ static void node_read_task(void *arg)
          * @brief Pre-allocated memory to data and size must be specified when passing in a level 1 pointer
          */
         ret = mwifi_read(src_addr, &data_type, data, &size, portMAX_DELAY);
-        msg_parse((const char *)data);
+        msg_parse((const char *)data, mwifi_get_parent_rssi(), esp_mesh_get_layer());
 
         MDF_ERROR_CONTINUE(ret != MDF_OK, "<%s> mwifi_read", mdf_err_to_name(ret));
         MDF_LOGI("Node receive, addr: " MACSTR ", size: %d, data: %s", MAC2STR(src_addr), size, data);
@@ -181,7 +181,7 @@ void app_main()
                 NULL, CONFIG_MDF_TASK_DEFAULT_PRIOTY, NULL);
 
     /* Periodic print system information */
-    TimerHandle_t timer = xTimerCreate("print_system_info", 20000 / portTICK_RATE_MS,
+    TimerHandle_t timer = xTimerCreate("print_system_info", (900 * 1000) / portTICK_RATE_MS,
                                        true, NULL, print_system_info_timercb);
     xTimerStart(timer, 0);
 }

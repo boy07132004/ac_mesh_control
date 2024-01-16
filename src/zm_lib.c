@@ -54,10 +54,10 @@ mdf_err_t report_to_root(int rssi, int layer)
     int on_off = control_ac_with_cmd(0);
     int work_mode = control_ac_with_cmd(3);
     int locked = control_ac_with_cmd(6);
-    int curr_temp = control_ac_with_cmd(9);
-    int set_temp = control_ac_with_cmd(10);
-    int wind_speed = control_ac_with_cmd(15);
-    int valve = control_ac_with_cmd(19);
+    int curr_temp = control_ac_with_cmd(14);
+    int set_temp = control_ac_with_cmd(15);
+    int wind_speed = control_ac_with_cmd(9);
+    int valve = control_ac_with_cmd(13);
 
     size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\",\"value\":[%d,%d,%d,%d,%d,%d,%d],\"rssi\":%d, \"layer\":%d}", LOCAL_NAME,
                     on_off, work_mode, locked, curr_temp, set_temp, wind_speed, valve,
@@ -90,7 +90,7 @@ mdf_err_t return_value_to_root(int origin_cmd, int value)
     return ret;
 }
 
-mdf_err_t msg_parse(const char *msg)
+mdf_err_t msg_parse(const char *msg, int rssi, int layer)
 {
     mdf_err_t res = MDF_OK;
     int cmd_ret = -1;
@@ -127,7 +127,9 @@ mdf_err_t msg_parse(const char *msg)
             else if (json_cmd)
             {
                 cmd_ret = control_ac_with_cmd(json_cmd->valueint);
-
+                //
+                report_to_root(rssi, layer);
+                //
                 if (cmd_ret >= 0)
                     return_value_to_root(json_cmd->valueint, cmd_ret);
                 else if (cmd_ret < -1)
@@ -164,7 +166,9 @@ mdf_err_t msg_parse(const char *msg)
             else if (json_cmd)
             {
                 cmd_ret = control_ac_with_cmd(json_cmd->valueint);
-
+                //
+                report_to_root(rssi, layer);
+                //
                 if (cmd_ret >= 0)
                     return_value_to_root(json_cmd->valueint, cmd_ret);
                 else if (cmd_ret < -1)
