@@ -72,22 +72,24 @@ mdf_err_t report_to_root(int rssi, int layer)
     return ret;
 }
 
+// Deprecated
 mdf_err_t return_value_to_root(int origin_cmd, int value)
 {
-    int size;
-    char msg[MAX_MESSAGE_SIZE];
-    mdf_err_t ret;
-    mwifi_data_type_t data_type = {0};
-    data_type.compression = true;
+    // int size;
+    // char msg[MAX_MESSAGE_SIZE];
+    // mdf_err_t ret;
+    // mwifi_data_type_t data_type = {0};
+    // data_type.compression = true;
 
-    size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\", \"cmd\":%d, \"value\":%d}", LOCAL_NAME, origin_cmd, value);
-    ret = mwifi_write(NULL, &data_type, msg, size, true);
-    printf("%d = %s\n", ret, msg);
+    // size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\", \"cmd\":%d, \"value\":%d}", LOCAL_NAME, origin_cmd, value);
+    // ret = mwifi_write(NULL, &data_type, msg, size, true);
+    // printf("%d = %s\n", ret, msg);
 
-    if (ret != MDF_OK)
-        ESP_LOGE(TAG, "node > root error");
+    // if (ret != MDF_OK)
+    //     ESP_LOGE(TAG, "node > root error");
 
-    return ret;
+    // return ret;
+    return MDF_OK;
 }
 
 mdf_err_t msg_parse(const char *msg, int rssi, int layer)
