@@ -73,6 +73,14 @@ class SerialCommunication:
             self.serial_port.write(message.encode('utf-8'))
             print(f'Sent: {message}')
 
+    def dispatch_command(self, command):
+        message = str(command).replace("'", '"')
+        self.serial_port.write(message.encode('utf-8'))
+        print(f'Sent: {message}')
+
+    def close(self):
+        self.serial_port.close()
+
 
 if __name__ == "__main__":
     port_name = "/dev/ttyUSB0"
