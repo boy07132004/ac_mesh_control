@@ -43,7 +43,7 @@ mdf_err_t zm_broadcast(const char *msg)
     return ret;
 }
 
-mdf_err_t report_to_root(int rssi, int layer)
+mdf_err_t report_to_root(int type, int rssi, int layer)
 {
     int size;
     char msg[MAX_MESSAGE_SIZE];
@@ -51,46 +51,68 @@ mdf_err_t report_to_root(int rssi, int layer)
     mwifi_data_type_t data_type = {0};
     data_type.compression = true;
 
-    int on_off = control_ac_with_cmd(0);
-    int work_mode = control_ac_with_cmd(3);
-    int locked = control_ac_with_cmd(6);
-    int curr_temp = control_ac_with_cmd(14);
-    int set_temp = control_ac_with_cmd(15);
-    int wind_speed = control_ac_with_cmd(9);
-    int valve = control_ac_with_cmd(13);
+    if (type == HEARTBEAT)
+    {
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"HB\":\"%s\"}", LOCAL_NAME);
+    }
+    else if (type == RECV)
+    {
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"RECV\":\"%s\"}", LOCAL_NAME);
+    }
+    else if (type == REPORT_NOW)
+    {
 
-    size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\",\"value\":[%d,%d,%d,%d,%d,%d,%d],\"rssi\":%d, \"layer\":%d}", LOCAL_NAME,
-                    on_off, work_mode, locked, curr_temp, set_temp, wind_speed, valve,
-                    rssi, layer);
+        int on_off = control_ac_with_cmd(0);
+        int work_mode = control_ac_with_cmd(3);
+        int locked = control_ac_with_cmd(6);
+        int curr_temp = control_ac_with_cmd(14);
+        int set_temp = control_ac_with_cmd(15);
+        int wind_speed = control_ac_with_cmd(9);
+        int valve = control_ac_with_cmd(13);
 
-    ret = mwifi_write(NULL, &data_type, msg, size, true);
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\",\"value\":[%d,%d,%d,%d,%d,%d,%d],\"rssi\":%d, \"layer\":%d}", LOCAL_NAME,
+                        on_off, work_mode, locked, curr_temp, set_temp, wind_speed, valve,
+                        rssi, layer);
+    }
+    else
+    {
+        return MDF_FAIL;
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+        ret = mwifi_write(NULL, &data_type, msg, size, true);
+        if (ret == MDF_OK)
+            break;
+
+        printf("Failed, send after 5 sec");
+        vTaskDelay(5000 / portTICK_RATE_MS);
+    }
+
     printf("%d = %s\n", ret, msg);
-
     if (ret != MDF_OK)
         ESP_LOGE(TAG, "node > root error");
 
     return ret;
 }
 
-// Deprecated
-mdf_err_t return_value_to_root(int origin_cmd, int value)
-{
-    // int size;
-    // char msg[MAX_MESSAGE_SIZE];
-    // mdf_err_t ret;
-    // mwifi_data_type_t data_type = {0};
-    // data_type.compression = true;
+// mdf_err_t recv_from_root()
+// {
+//     int size;
+//     char msg[MAX_MESSAGE_SIZE];
+//     mdf_err_t ret;
+//     mwifi_data_type_t data_type = {0};
+//     data_type.compression = true;
 
-    // size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\", \"cmd\":%d, \"value\":%d}", LOCAL_NAME, origin_cmd, value);
-    // ret = mwifi_write(NULL, &data_type, msg, size, true);
-    // printf("%d = %s\n", ret, msg);
+//     size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"recv\":\"%s\"}", LOCAL_NAME);
+//     ret = mwifi_write(NULL, &data_type, msg, size, true);
+//     // printf("%d = %s\n", ret, msg);
 
-    // if (ret != MDF_OK)
-    //     ESP_LOGE(TAG, "node > root error");
+//     if (ret != MDF_OK)
+//         ESP_LOGE(TAG, "node > root error");
 
-    // return ret;
-    return MDF_OK;
-}
+//     return MDF_OK;
+// }
 
 mdf_err_t msg_parse(const char *msg, int rssi, int layer)
 {
@@ -118,6 +140,8 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     {
         if (strcmp(json_addr->valuestring, LOCAL_NAME) == 0)
         {
+            res |= report_to_root(RECV, 0, 0);
+
             if (json_manual_cmd)
             {
                 if ((res = parse_manual_cmd(json_manual_cmd)) == MDF_FAIL)
@@ -128,13 +152,13 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
             }
             else if (json_cmd)
             {
-                cmd_ret = control_ac_with_cmd(json_cmd->valueint);
-                //
-                report_to_root(rssi, layer);
-                //
-                if (cmd_ret >= 0)
-                    return_value_to_root(json_cmd->valueint, cmd_ret);
-                else if (cmd_ret < -1)
+
+                if (json_cmd->valueint == 0)
+                    report_to_root(REPORT_NOW, rssi, layer);
+                else
+                    cmd_ret = control_ac_with_cmd(json_cmd->valueint);
+
+                if (cmd_ret < -1)
                 {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
                     res = MDF_FAIL;
@@ -157,6 +181,8 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     {
         if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0 || strcmp(json_group->valuestring, "all") == 0)
         {
+            res |= report_to_root(RECV, 0, 0);
+
             if (json_manual_cmd)
             {
                 if ((res = parse_manual_cmd(json_manual_cmd)) == MDF_FAIL)
@@ -167,13 +193,12 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
             }
             else if (json_cmd)
             {
-                cmd_ret = control_ac_with_cmd(json_cmd->valueint);
-                //
-                report_to_root(rssi, layer);
-                //
-                if (cmd_ret >= 0)
-                    return_value_to_root(json_cmd->valueint, cmd_ret);
-                else if (cmd_ret < -1)
+                if (json_cmd->valueint == 0)
+                    report_to_root(REPORT_NOW, rssi, layer);
+                else
+                    cmd_ret = control_ac_with_cmd(json_cmd->valueint);
+
+                if (cmd_ret < -1)
                 {
                     ESP_LOGE(TAG, "CONTOL ERROR.");
                     res = MDF_FAIL;
