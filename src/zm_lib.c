@@ -51,6 +51,14 @@ mdf_err_t report_to_root(int type, int rssi, int layer)
     mwifi_data_type_t data_type = {0};
     data_type.compression = true;
 
+    mesh_addr_t parent_bssid = {0};
+    uint8_t sta_mac[MWIFI_ADDR_LEN] = {0};
+
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, sta_mac);
+    esp_mesh_get_parent_bssid(&parent_bssid);
+
+    MDF_LOGI("self mac: " MACSTR ", parent bssid: " MACSTR, MAC2STR(sta_mac), MAC2STR(parent_bssid.addr));
+
     if (type == HEARTBEAT)
     {
         size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"HB\":\"%s\"}", LOCAL_NAME);
@@ -85,34 +93,16 @@ mdf_err_t report_to_root(int type, int rssi, int layer)
         if (ret == MDF_OK)
             break;
 
-        printf("Failed, send after 5 sec");
+        ESP_LOGE(TAG, "Failed, send after 5 sec");
         vTaskDelay(5000 / portTICK_RATE_MS);
     }
 
-    printf("%d = %s\n", ret, msg);
+    ESP_LOGI(TAG, "%d = %s\n", ret, msg);
     if (ret != MDF_OK)
         ESP_LOGE(TAG, "node > root error");
 
     return ret;
 }
-
-// mdf_err_t recv_from_root()
-// {
-//     int size;
-//     char msg[MAX_MESSAGE_SIZE];
-//     mdf_err_t ret;
-//     mwifi_data_type_t data_type = {0};
-//     data_type.compression = true;
-
-//     size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"recv\":\"%s\"}", LOCAL_NAME);
-//     ret = mwifi_write(NULL, &data_type, msg, size, true);
-//     // printf("%d = %s\n", ret, msg);
-
-//     if (ret != MDF_OK)
-//         ESP_LOGE(TAG, "node > root error");
-
-//     return MDF_OK;
-// }
 
 mdf_err_t msg_parse(const char *msg, int rssi, int layer)
 {
@@ -128,7 +118,8 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     if (!json_root)
     {
         ESP_LOGE(TAG, "cJSON_Parse, msg format error, data: %s", msg);
-        return MDF_FAIL;
+        ret = MDF_FAIL;
+        goto end;
     }
 
     json_cmd = cJSON_GetObjectItem(json_root, "cmd");
@@ -179,7 +170,12 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     }
     else if (json_group) // To group or all devices
     {
-        if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0 || strcmp(json_group->valuestring, "all") == 0)
+        zm_broadcast(msg);
+        if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0
+#ifndef SPEC
+            || strcmp(json_group->valuestring, "all") == 0
+#endif
+        )
         {
             res |= report_to_root(RECV, 0, 0);
 
@@ -212,8 +208,6 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
                 goto end;
             }
         }
-
-        zm_broadcast(msg);
     }
     else // Address not found
     {
