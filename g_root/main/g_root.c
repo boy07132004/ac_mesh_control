@@ -51,7 +51,7 @@ static void msg_from_mesh(void *arg)
 
     MDF_LOGI("Receiving...");
 
-    for (int i = 0;; ++i)
+    while (1)
     {
         if (!mwifi_is_started())
         {
@@ -180,8 +180,8 @@ void app_main()
                                        true, NULL, print_system_info_timercb);
     xTimerStart(timer, 0);
 
-    xTaskCreate(msg_from_mesh, "msg_from_mesh", 4 * 1024,
+    xTaskCreate(msg_from_mesh, "msg_from_mesh", 32 * 1024,
                 NULL, CONFIG_MDF_TASK_DEFAULT_PRIOTY, NULL);
-    xTaskCreate(ac_uart_to_mesh, "ac_uart_to_mesh", 4 * 1024,
+    xTaskCreate(ac_uart_to_mesh, "ac_uart_to_mesh", 32 * 1024,
                 NULL, CONFIG_MDF_TASK_DEFAULT_PRIOTY, NULL);
 }
