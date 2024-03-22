@@ -118,7 +118,7 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     if (!json_root)
     {
         ESP_LOGE(TAG, "cJSON_Parse, msg format error, data: %s", msg);
-        ret = MDF_FAIL;
+        res = MDF_FAIL;
         goto end;
     }
 
