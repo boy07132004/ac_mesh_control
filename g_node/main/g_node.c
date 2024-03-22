@@ -4,6 +4,7 @@
 #include "../../src/zm_lib.h"
 
 // #define MEMORY_DEBUG
+// #define DEBUG_MODE
 #define RX_PIN 16
 #define TX_PIN 17
 #define UART_NUM UART_NUM_2
@@ -40,7 +41,9 @@ static void node_read_task(void *arg)
         msg_parse((const char *)data, mwifi_get_parent_rssi(), esp_mesh_get_layer());
 
         MDF_ERROR_CONTINUE(ret != MDF_OK, "<%s> mwifi_read", mdf_err_to_name(ret));
+#ifdef DEBUG_MODE
         MDF_LOGI("Node receive, addr: " MACSTR ", size: %d, data: %s", MAC2STR(src_addr), size, data);
+#endif
     }
 
     MDF_LOGW("Node read task is exit");

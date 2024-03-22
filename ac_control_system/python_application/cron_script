@@ -1,0 +1,2 @@
+#@daily cd /code/ && python3 influxdb_to_csv.py >> /log.txt
+

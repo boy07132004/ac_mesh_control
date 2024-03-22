@@ -1,0 +1,70 @@
+version: "3.4"
+
+x-env-variables: &common-variables
+    INFLUXDB_DB: v5f_ac
+    INFLUXDB_ADMIN_USER: root
+    INFLUXDB_ADMIN_PASSWORD: ml6a01
+    INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    DATABASE_IP: 172.28.1.1
+    PROJECT: v5f_ac
+    TZ: Asia/Taipei
+    
+services: 
+    database: 
+
+        image: influxdb:1.8.10
+        volumes:
+            - "$PWD/init_db.iql:/docker-entrypoint-initdb.d/init_influxdb.iql:ro"
+            - "db_data:/var/lib/influxdb"
+        restart: always
+        
+        networks:
+            internal:
+                ipv4_address: 172.28.1.1
+        ports:
+            - "8086:8086"
+            - "8083:8083"
+        environment: *common-variables
+    
+    python_application:
+
+        restart: always
+        build: ./python_application
+        volumes:
+            - "$PWD/python_application:/code"
+        devices:
+            - "/dev/ttyUSB0:/dev/ttyUSB0"
+        ports:
+            - "8000:8000"
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+        links:
+            - database
+        networks:
+            internal:
+                ipv4_address: 172.28.1.2
+        environment: *common-variables
+    
+    grafana:
+        image: grafana/grafana-oss:8.5.5
+        restart: always
+        networks:
+            internal:
+                ipv4_address: 172.28.1.3
+        ports:
+            - 3000:3000
+          
+        
+volumes:
+    db_data:
+    
+
+networks:
+    internal:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.28.0.0/16

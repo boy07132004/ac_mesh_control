@@ -23,21 +23,21 @@ mdf_err_t zm_broadcast(const char *msg)
     mdf_err_t ret = MDF_OK;
     wifi_sta_list_t wifi_sta_list = {0x0};
     mwifi_data_type_t data_type = {0};
-    data_type.compression = true;
+    // data_type.compression = true;
 
     char json_message[MAX_MESSAGE_SIZE];
 
     esp_wifi_ap_get_sta_list(&wifi_sta_list);
     for (int i = 0; i < wifi_sta_list.num; i++)
     {
-        ESP_LOGI(TAG, "Send to MAC: " MACSTR, MAC2STR(wifi_sta_list.sta[i].mac));
+        // ESP_LOGI(TAG, "Send to MAC: " MACSTR, MAC2STR(wifi_sta_list.sta[i].mac));
         size_t size = snprintf(json_message, MAX_MESSAGE_SIZE, "%s", msg);
         ret = mwifi_write(wifi_sta_list.sta[i].mac, &data_type, json_message, size, true);
 
-        if (ret != MDF_OK)
-        {
-            ESP_LOGE(TAG, "Send failed MAC:" MACSTR, MAC2STR(wifi_sta_list.sta[i].mac));
-        }
+        // if (ret != MDF_OK)
+        // {
+        //     ESP_LOGE(TAG, "Send failed MAC:" MACSTR, MAC2STR(wifi_sta_list.sta[i].mac));
+        // }
     }
 
     return ret;

@@ -1,0 +1,1 @@
+alter retention policy "autogen" on "test" duration 365d shard duration 7d replication 1 default
