@@ -130,12 +130,12 @@ static mdf_err_t event_loop_cb(mdf_event_loop_t event, void *ctx)
         break;
 
     case MDF_EVENT_MWIFI_PARENT_CONNECTED:
-        MDF_LOGI("Parent is connected on station interface");
+        MDF_LOGI("Parent is connected on station interface.");
 
-        if (esp_mesh_is_root())
-        {
-            esp_netif_dhcpc_start(sta_netif);
-        }
+        // if (esp_mesh_is_root())
+        // {
+        //     esp_netif_dhcpc_start(sta_netif);
+        // }
 
         break;
 
@@ -157,6 +157,7 @@ void app_main()
         .channel = CONFIG_MESH_CHANNEL,
         .mesh_id = CONFIG_MESH_ID,
         .mesh_type = 1, // root
+        .data_drop_enable = true,
     };
 
     /**
