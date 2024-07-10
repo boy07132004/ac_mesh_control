@@ -39,6 +39,10 @@ class SerialCommunication:
 
                     elif type(data.get("value")) is int:
                         self.data_to_db.put_response_data(data)
+
+                    elif "temperature" in data:
+                        self.data_to_db.put_dht_data(data)
+
                     else:
                         print(f"Not match {data}")
                 except Exception as e:

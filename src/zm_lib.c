@@ -255,3 +255,56 @@ mdf_err_t parse_manual_cmd(const cJSON *manuel_cmd)
 end:
     return res;
 }
+
+mdf_err_t report_to_root_dht(int type, int rssi, int layer)
+{
+    int size;
+    char msg[MAX_MESSAGE_SIZE];
+    mdf_err_t ret;
+    mwifi_data_type_t data_type = {0};
+    data_type.compression = true;
+
+    mesh_addr_t parent_bssid = {0};
+    uint8_t sta_mac[MWIFI_ADDR_LEN] = {0};
+
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, sta_mac);
+    esp_mesh_get_parent_bssid(&parent_bssid);
+
+    MDF_LOGI("self mac: " MACSTR ", parent bssid: " MACSTR, MAC2STR(sta_mac), MAC2STR(parent_bssid.addr));
+
+    if (type == HEARTBEAT)
+    {
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"HB\":\"%s\"}", LOCAL_NAME);
+    }
+    else if (type == REPORT_NOW)
+    {
+        static const uint8_t cmd_temperature[8] = {0x01, 0x04, 0x00, 0x01, 0x00, 0x01, 0x60, 0x0A};
+        static const uint8_t cmd_humidity[8] = {0x01, 0x04, 0x00, 0x02, 0x00, 0x01, 0x90, 0x0A};
+
+        int temperature = control_ac_with_rs485(cmd_temperature);
+        int humidity = control_ac_with_rs485(cmd_humidity);
+
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\", \"temperature\":%d, \"humidity\":%d,\"rssi\":%d, \"layer\":%d}",
+                        LOCAL_NAME, temperature, humidity, rssi, layer);
+    }
+    else
+    {
+        return MDF_FAIL;
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+        ret = mwifi_write(NULL, &data_type, msg, size, true);
+        if (ret == MDF_OK)
+            break;
+
+        ESP_LOGE(TAG, "Failed, send after 5 sec");
+        vTaskDelay(5000 / portTICK_RATE_MS);
+    }
+
+    ESP_LOGI(TAG, "%d = %s\n", ret, msg);
+    if (ret != MDF_OK)
+        ESP_LOGE(TAG, "node > root error");
+
+    return ret;
+}

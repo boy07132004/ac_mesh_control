@@ -39,7 +39,7 @@ class DataQueueToDB(threading.Thread):
         if device is None or len(value_array) != len(self.command_map):
             logging.error(f"Data format error. > {data}")
             return
-        if value_array[3] > 310 or value_array[3] <100:
+        if value_array[3] > 310 or value_array[3] < 100:
             logging.error("Temp error. > {data}")
             return
         p = Point(PROJECT).tag("device", device)
@@ -98,6 +98,25 @@ class DataQueueToDB(threading.Thread):
 
         p = Point(PROJECT).tag("device", device)
         p.field(self.command_map[cmd], value)
+        p.time(datetime.utcnow())
+
+        self.dataQueue.put(p)
+
+    def put_dht_data(self, data):
+        # {"device":"name", "temperature":2899, "humidity":4086,"rssi":-49, "layer":2}
+        device = data.get("device")
+        temperature = data.get("temperature")
+        humidity = data.get("humidity")
+
+        if device is None or temperature is None or humidity is None:
+            logging.error(f"Data format error. > {data}")
+            return
+
+        p = Point(PROJECT).tag("device", device)
+        p.field("curr_temp", temperature/100.0)
+        p.field("curr_humid", humidity/100.0)
+        p.field("rssi", data.get("rssi", 0))
+        p.field("layer", data.get("layer", 0))
         p.time(datetime.utcnow())
 
         self.dataQueue.put(p)

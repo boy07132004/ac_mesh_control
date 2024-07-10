@@ -15,6 +15,7 @@ mdf_err_t report_to_root(int type, int rssi, int layer);
 mdf_err_t parse_manual_cmd(const cJSON *manuel_cmd);
 mdf_err_t uart_init(int uart_num, int rx, int tx, int baud);
 mdf_err_t msg_parse(const char *msg, int rssi, int layer);
+mdf_err_t report_to_root_dht(int type, int rssi, int layer);
 
 enum REPORT_TYPE
 {
