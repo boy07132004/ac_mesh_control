@@ -18,15 +18,10 @@ PROJECT = os.environ['PROJECT']
 RETENTIONPOLICY = 'autogen'
 BUCKET = f'{DATABASE}/{RETENTIONPOLICY}'
 
-CLIENT = InfluxDBClient(
-    url=f'http://{DATABASEHOST}:8086', token=f'{USER}:{PASSWORD}', org='my-org')
-
 
 class DataQueueToDB(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self, daemon=True)
-        logging.basicConfig(filename='to_db.log', filemode='a',
-                            format='%(name)s - %(levelname)s - %(message)s')
         self.dataQueue = queue.Queue(maxsize=0)
         self.command_map = ["on_off", "work_mode",
                             "locked", "curr_temp", "set_temp", "wind_speed", "valve"]
@@ -40,7 +35,7 @@ class DataQueueToDB(threading.Thread):
             logging.error(f"Data format error. > {data}")
             return
         if value_array[3] > 310 or value_array[3] < 100:
-            logging.error("Temp error. > {data}")
+            logging.error(f"Temp error. > {data}")
             return
         p = Point(PROJECT).tag("device", device)
         p.field(self.command_map[0], ["Off", "On"][value_array[0]])
@@ -127,14 +122,30 @@ class DataQueueToDB(threading.Thread):
         while not self.dataQueue.empty():
             payload += (self.dataQueue.get().to_line_protocol() + "\n")
 
-        CLIENT.write_api(write_options=SYNCHRONOUS).write(
-            bucket=BUCKET, record=payload)
+        return payload
 
     def run(self):
-        while True:
-            if not self.dataQueue.empty():
-                self.upload()
-            else:
-                logging.warning(f"{datetime.now()} -> Queue empty")
+        payload = ""
 
-            time.sleep(5)
+        while True:
+            with InfluxDBClient(url=f'http://{DATABASEHOST}:8086', token=f'{USER}:{PASSWORD}', org='my-org') as CLIENT:
+                while True:
+                    try:
+                        if not self.dataQueue.empty():
+                            payload += self.upload()
+                        else:
+                            logging.info("Queue is empty.")
+
+                        CLIENT.write_api(write_options=SYNCHRONOUS).write(
+                            bucket=BUCKET, record=payload)
+                        payload = ""
+
+                    except Exception as e:
+                        logging.error(f"{e}")
+                        if len(payload) >= 5_000_000:
+                            payload = ""
+                        break
+
+                    time.sleep(5)
+
+            logging.warning("Reset DB connection.")

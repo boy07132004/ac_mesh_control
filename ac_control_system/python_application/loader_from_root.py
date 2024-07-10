@@ -1,6 +1,5 @@
 import json
 import serial
-import logging
 import threading
 import loader_to_db
 
@@ -111,10 +110,8 @@ if __name__ == "__main__":
 
     read_thread.start()
     write_thread.start()
-    data_to_db.start()
 
     try:
-        data_to_db.join()
         read_thread.join()
         write_thread.join()
 

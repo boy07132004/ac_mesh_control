@@ -19,7 +19,7 @@ int control_ac_with_rs485(const uint8_t *cmd)
     uint8_t len;
 
     uart_write_bytes(UART_NUM_2, cmd, 8);
-    len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE_485, PACKET_READ_TICS * 10);
+    len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE_485, PACKET_READ_TICS * 101);
 
     if (cmd[1] <= 0x04 && len > 5)
         return (data[3] << 8 | data[4]);
