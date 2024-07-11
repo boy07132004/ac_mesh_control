@@ -15,39 +15,21 @@ config LOCAL_NAME
     string "LOCAL NAME"
         default "auo"
 
+config BYPASS_ALL
+    bool "Bypass ALL command"
+
 config MESH_CHANNEL
     int "Mesh network channel"
     range 1 14
     default 13
     help
         Mesh network channel.
-
-config UART_PORT_NUM
-    int "UART PORT NUM"
-    range 0 2
-    default 2
-    help
-        choose uart port num.
-
-config UART_BAUD_RATE
+    
+config UART_BAUDRATE
     int "UART BAUD RATE"
     range 0 921600
-    default 115200
+    default 9600
     help
         choose uart baud rate.
-
-config UART_TX_IO
-    int "UART TX IO"
-    range 0 33
-    default 17
-    help
-        choose uart tx IO.
-
-config UART_RX_IO
-    int "UART RX IO"
-    range 0 33
-    default 16
-    help
-        choose uart rx IO.
 
 endmenu

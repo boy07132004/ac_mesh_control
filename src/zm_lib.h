@@ -6,9 +6,9 @@
 #include "ac_control.h"
 
 #define MAX_MESSAGE_SIZE 500
-// #define SPEC
-#define LOCAL_GROUP CONFIG_LOCAL_GROUP
-#define LOCAL_NAME CONFIG_LOCAL_NAME
+#define LOCAL_GROUP "_____"
+#define LOCAL_NAME "_____"
+#define DHT_LOCAL_NAME CONFIG_LOCAL_NAME
 
 mdf_err_t zm_broadcast(const char *msg);
 mdf_err_t report_to_root(int type, int rssi, int layer);

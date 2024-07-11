@@ -171,14 +171,14 @@ mdf_err_t msg_parse(const char *msg, int rssi, int layer)
     else if (json_group) // To group or all devices
     {
         zm_broadcast(msg);
-        if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0
-#ifndef SPEC
-            || strcmp(json_group->valuestring, "all") == 0
-#endif
-        )
+        if (strcmp(json_group->valuestring, LOCAL_GROUP) == 0 || strcmp(json_group->valuestring, "all") == 0)
         {
-            res |= report_to_root(RECV, 0, 0);
+            res |= report_to_root_dht(RECV, 0, 0);
 
+#ifdef CONFIG_BYPASS_ALL
+            if (strcmp(json_group->valuestring, "all") == 0)
+                goto end;
+#endif
             if (json_manual_cmd)
             {
                 if ((res = parse_manual_cmd(json_manual_cmd)) == MDF_FAIL)
@@ -274,7 +274,11 @@ mdf_err_t report_to_root_dht(int type, int rssi, int layer)
 
     if (type == HEARTBEAT)
     {
-        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"HB\":\"%s\"}", LOCAL_NAME);
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"HB\":\"%s\"}", DHT_LOCAL_NAME);
+    }
+    else if (type == RECV)
+    {
+        size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"RECV\":\"%s\"}", DHT_LOCAL_NAME);
     }
     else if (type == REPORT_NOW)
     {
@@ -285,7 +289,7 @@ mdf_err_t report_to_root_dht(int type, int rssi, int layer)
         int humidity = control_ac_with_rs485(cmd_humidity);
 
         size = snprintf(msg, MAX_MESSAGE_SIZE, "{\"device\":\"%s\", \"temperature\":%d, \"humidity\":%d,\"rssi\":%d, \"layer\":%d}",
-                        LOCAL_NAME, temperature, humidity, rssi, layer);
+                        DHT_LOCAL_NAME, temperature, humidity, rssi, layer);
     }
     else
     {

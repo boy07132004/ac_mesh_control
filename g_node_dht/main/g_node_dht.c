@@ -8,7 +8,7 @@
 #define RX_PIN 16
 #define TX_PIN 17
 #define UART_NUM UART_NUM_2
-#define AC_BAUD 9600
+#define AC_BAUD CONFIG_UART_BAUDRATE
 
 static const char *TAG = "AC_CONTROL_NODE";
 esp_netif_t *sta_netif;
@@ -35,7 +35,7 @@ static void node_read_task(void *arg)
         memset(data, 0, MWIFI_PAYLOAD_LEN);
 
         ret = mwifi_read(src_addr, &data_type, data, &size, portMAX_DELAY);
-        // msg_parse((const char *)data, mwifi_get_parent_rssi(), esp_mesh_get_layer());
+        msg_parse((const char *)data, mwifi_get_parent_rssi(), esp_mesh_get_layer());
 
         MDF_ERROR_CONTINUE(ret != MDF_OK, "<%s> mwifi_read", mdf_err_to_name(ret));
 #ifdef DEBUG_MODE
@@ -55,7 +55,7 @@ static void node_read_task(void *arg)
 static void print_system_info_timercb(void *timer)
 {
     static uint8_t cnt = 0;
-    if (++cnt == 30)
+    if (++cnt == 2)
     {
         report_to_root_dht(REPORT_NOW, mwifi_get_parent_rssi(), esp_mesh_get_layer());
         cnt = 0;
@@ -175,7 +175,7 @@ void app_main()
                 NULL, CONFIG_MDF_TASK_DEFAULT_PRIOTY, NULL);
 
     /* Periodic print system information */
-    TimerHandle_t timer = xTimerCreate("print_system_info", (30 * 1000) / portTICK_RATE_MS,
+    TimerHandle_t timer = xTimerCreate("print_system_info", (10 * 1000) / portTICK_RATE_MS,
                                        true, NULL, print_system_info_timercb);
     xTimerStart(timer, 0);
 }
