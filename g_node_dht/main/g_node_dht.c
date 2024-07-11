@@ -55,7 +55,7 @@ static void node_read_task(void *arg)
 static void print_system_info_timercb(void *timer)
 {
     static uint8_t cnt = 0;
-    if (++cnt == 2)
+    if (++cnt == 30)
     {
         report_to_root_dht(REPORT_NOW, mwifi_get_parent_rssi(), esp_mesh_get_layer());
         cnt = 0;
@@ -175,7 +175,7 @@ void app_main()
                 NULL, CONFIG_MDF_TASK_DEFAULT_PRIOTY, NULL);
 
     /* Periodic print system information */
-    TimerHandle_t timer = xTimerCreate("print_system_info", (10 * 1000) / portTICK_RATE_MS,
+    TimerHandle_t timer = xTimerCreate("print_system_info", (30 * 1000) / portTICK_RATE_MS,
                                        true, NULL, print_system_info_timercb);
     xTimerStart(timer, 0);
 }
